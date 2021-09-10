@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponseRedirect
 # <HINT> Import any new Models here
-from .models import Course, Enrollment
+from .models import Course, Enrollment, Submission, Choice, Question
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
@@ -68,6 +68,38 @@ def check_if_enrolled(user, course):
         if num_results > 0:
             is_enrolled = True
     return is_enrolled
+
+
+def submit(request, course_id):
+    print('Here')
+    user_id = request.user.id
+    enrollment = Enrollment.objects.get(user_id = user_id, course_id = course_id)
+    print(enrollment)
+    choices = extract_answers(request)
+    choices_obj = Choice.objects.filter(id__in=choices)
+    submission = Submission.objects.create(enrollment_id = enrollment.id)
+    submission.choices.set(choices_obj)
+    return redirect('onlinecourse:show_exam_result', course_id, submission.id) 
+
+def extract_answers(request):
+   submitted_anwsers = []
+   for key in request.POST:
+       if key.startswith('choice'):
+           value = request.POST[key]
+           choice_id = int(value)
+           submitted_anwsers.append(choice_id)
+   return submitted_anwsers
+
+
+def show_exam_result(request, course_id, submission_id):
+    print('in results')
+    choices = list()
+    course = Course.objects.get(id = course_id)
+    submission = Submission.objects.get(id = submission_id)
+    for choice in submission.choices.all():
+        choices.append(choice.id)
+    Question.is_get_score    
+
 
 
 # CourseListView
