@@ -93,47 +93,27 @@ def extract_answers(request):
 
 
 def show_exam_result(request, course_id, submission_id):
-    print('in results')
-    choices = list()
-    course = Course.objects.get(id = course_id)
-    submission = Submission.objects.get(id = submission_id)
-    total =  0
-    total_user =  0
-    q_results = {}
-    c_submits = {}
-    c_results = {}
-    for q in course.questions.all():
-        q_total = 0
-        q_total_user = 0
-        for c in q.choices.all():
-            q_total += 1  
-            temp_right = c.is_correct
-            count =  submission.choices.filter(id = c.id).count()
+    from django.db.models import Sum
+    course = Course.objects.get(pk=course_id)
+    submission = Submission.objects.get(pk=submission_id)
+    selected_choices = submission.choices.all()
 
-            temp_user  = count > 0 
-            c_submits[c.id] = temp_user
-            c_results[c.id] = temp_user == temp_right
-            if temp_user == temp_right:
-                q_total_user += 1        
-        q_results[q.id] =  q.grade*(q_total_user / q_total)
-        total += q.grade 
-        total_user  += q_results[q.id]
-    context  = {}
-    context["course"]  =  course
-    context["submission"]  =  submission
-    #context["choices"]  =  submission.chocies.all()
-    context["total"]  =  total
-    context["total_user"]  =  total_user
-    context["q_results"]  =  q_results
-    context["c_submits"]  =  c_submits
-    context["c_results"]  =  c_results
-    context["grade"]  =  int((total_user/total)*100)
-    print(context)
-    #print(vars(submission.chocies))
-    #user = request.user
-    #return render(request, 'onlinecourse/show_exam_result.html', context)
-    return render(request, 'onlinecourse/exam_result_bootstrap.html', context)   
+    questions_all = course.questions.all()
+    total_mark = round(course.questions.all().aggregate(Sum("grade"))["grade__sum"])
+    grade = 0
+    for question in questions_all:
+        if question.is_get_score(selected_choices):
+            grade += question.grade
 
+    context = {
+        'course': course,
+        'grade': round(grade),
+        'total_mark': total_mark,
+        'questions': questions_all,
+        'selected_choices': selected_choices,
+    }
+
+    return render(request , 'onlinecourse/exam_result_bootstrap.html' , context)
 
 
 # CourseListView
