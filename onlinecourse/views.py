@@ -111,6 +111,7 @@ def show_exam_result(request, course_id, submission_id):
         'total_mark': total_mark,
         'questions': questions_all,
         'selected_choices': selected_choices,
+        'result': round(grade/total_mark),
     }
 
     return render(request , 'onlinecourse/exam_result_bootstrap.html' , context)
